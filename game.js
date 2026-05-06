@@ -38,10 +38,6 @@ const closeTutorialBtn = document.getElementById('close-tutorial-btn');
 const upgradeScreen = document.getElementById('upgrade-screen');
 const upgradeCardsContainer = document.getElementById('upgrade-cards');
 const skipUpgradeBtn = document.getElementById('skip-upgrade-btn');
-const shopScreen = document.getElementById('shop-screen');
-const shopCardsContainer = document.getElementById('shop-cards');
-const shopGoldEl = document.getElementById('shop-gold');
-const leaveShopBtn = document.getElementById('leave-shop-btn');
 const mainMenu = document.getElementById('main-menu');
 const newGameBtn = document.getElementById('new-game-btn');
 const loadGameBtn = document.getElementById('load-game-btn');
@@ -108,18 +104,32 @@ const CARDS = {
     dodge:         { id:'dodge',         name:'翻滚躲避',     cost:1, type:'skill',  block:5, draw:1, desc:'获得 5 点格挡。抽 1 张牌。' },
     battlecry:     { id:'battlecry',     name:'战斗呐喊',     cost:1, type:'power',  strGain:3, desc:'力量 +3。（能力卡）' },
     flamaura:      { id:'flamaura',      name:'火焰光环',     cost:2, type:'power',  aura:4, desc:'每回合造成 4 点伤害。（能力卡）' },
-    arcane_missile:{ id:'arcane_missile',name:'奥术飞弹',     cost:1, type:'attack', dmg:4,  hits:3, shopOnly:true, price:45, desc:'造成 4 点伤害 3 次。' },
-    frost_seal:    { id:'frost_seal',    name:'霜纹封印',     cost:1, type:'skill',  block:7, applyWeak:1, shopOnly:true, price:40, desc:'获得 7 点格挡。施加 1 层虚弱。' },
-    phoenix_feather:{id:'phoenix_feather',name:'凤凰羽',       cost:1, type:'skill',  healAmt:8, draw:1, shopOnly:true, price:50, desc:'回复 8 点生命。抽 1 张牌。' },
-    golden_slash:  { id:'golden_slash',  name:'鎏金斩',       cost:0, type:'attack', dmg:5,  shopOnly:true, price:55, desc:'造成 5 点伤害。' },
-    dragon_spark:  { id:'dragon_spark',  name:'龙息火花',     cost:2, type:'attack', dmg:10, poison:3, shopOnly:true, price:65, desc:'造成 10 点伤害。施加 3 层中毒。' },
-    guardian_oath: { id:'guardian_oath', name:'守护誓约',     cost:2, type:'power',  strGain:1, aura:2, shopOnly:true, price:70, desc:'力量 +1。每回合造成 2 点伤害。' },
+    arcane_missile:{ id:'arcane_missile',name:'奥术飞弹',     cost:1, type:'attack', dmg:5,  hits:3, unlockPrice:90, desc:'造成 5 点伤害 3 次。' },
+    frost_seal:    { id:'frost_seal',    name:'霜纹封印',     cost:1, type:'skill',  block:10, applyWeak:2, unlockPrice:85, desc:'获得 10 点格挡。施加 2 层虚弱。' },
+    phoenix_feather:{id:'phoenix_feather',name:'凤凰羽',       cost:1, type:'skill',  healAmt:12, draw:2, unlockPrice:100, desc:'回复 12 点生命。抽 2 张牌。' },
+    golden_slash:  { id:'golden_slash',  name:'鎏金斩',       cost:0, type:'attack', dmg:8,  unlockPrice:110, desc:'造成 8 点伤害。' },
+    dragon_spark:  { id:'dragon_spark',  name:'龙息火花',     cost:2, type:'attack', dmg:16, poison:5, unlockPrice:130, desc:'造成 16 点伤害。施加 5 层中毒。' },
+    guardian_oath: { id:'guardian_oath', name:'守护誓约',     cost:2, type:'power',  strGain:2, aura:4, unlockPrice:140, desc:'力量 +2。每回合造成 4 点伤害。' },
     wound:         { id:'wound',         name:'受伤',         cost:99,type:'curse',  desc:'无法打出。占用手牌。' },
 };
 
 // Reward pool (excludes starter cards and curses)
 const REWARD_POOL = ['fireball','poison_dagger','thunder','vampire','weaken','heal','dodge','battlecry','flamaura'];
-const SHOP_CARD_POOL = ['arcane_missile','frost_seal','phoenix_feather','golden_slash','dragon_spark','guardian_oath'];
+const SPECIAL_CARD_POOL = ['arcane_missile','frost_seal','phoenix_feather','golden_slash','dragon_spark','guardian_oath'];
+const BASIC_UNLOCKED_CARDS = ['strike','defend','backstab'];
+const UNLOCKABLE_CARD_POOL = [...REWARD_POOL, ...SPECIAL_CARD_POOL];
+const CARD_UNLOCK_PRICES = {
+    fireball: 45,
+    poison_dagger: 45,
+    thunder: 55,
+    vampire: 70,
+    weaken: 40,
+    heal: 40,
+    dodge: 45,
+    battlecry: 75,
+    flamaura: 80
+};
+const STARTER_BUNDLE_CARDS = REWARD_POOL.filter(id => !SPECIAL_CARD_POOL.includes(id));
 
 // ============================================================
 // CARD UPGRADES — Stats applied when a card is upgraded
@@ -137,12 +147,12 @@ const CARD_UPGRADES = {
     dodge:         { name:'翻滚躲避+',   block:8, draw:2,   desc:'获得 8 点格挡。抽 2 张牌。' },
     battlecry:     { name:'战斗呐喊+',   strGain:5,         desc:'力量 +5。（能力卡）' },
     flamaura:      { name:'火焰光环+',   aura:7,            desc:'每回合造成 7 点伤害。（能力卡）' },
-    arcane_missile:{ name:'奥术飞弹+',   dmg:5,             desc:'造成 5 点伤害 3 次。' },
-    frost_seal:    { name:'霜纹封印+',   block:10, applyWeak:2, desc:'获得 10 点格挡。施加 2 层虚弱。' },
-    phoenix_feather:{name:'凤凰羽+',     healAmt:12, draw:2, desc:'回复 12 点生命。抽 2 张牌。' },
-    golden_slash:  { name:'鎏金斩+',     dmg:8,             desc:'造成 8 点伤害。' },
-    dragon_spark:  { name:'龙息火花+',   dmg:14, poison:4,  desc:'造成 14 点伤害。施加 4 层中毒。' },
-    guardian_oath: { name:'守护誓约+',   strGain:2, aura:3, desc:'力量 +2。每回合造成 3 点伤害。' },
+    arcane_missile:{ name:'奥术飞弹+',   dmg:7,             desc:'造成 7 点伤害 3 次。' },
+    frost_seal:    { name:'霜纹封印+',   block:14, applyWeak:3, desc:'获得 14 点格挡。施加 3 层虚弱。' },
+    phoenix_feather:{name:'凤凰羽+',     healAmt:16, draw:2, desc:'回复 16 点生命。抽 2 张牌。' },
+    golden_slash:  { name:'鎏金斩+',     dmg:12,            desc:'造成 12 点伤害。' },
+    dragon_spark:  { name:'龙息火花+',   dmg:22, poison:7,  desc:'造成 22 点伤害。施加 7 层中毒。' },
+    guardian_oath: { name:'守护誓约+',   strGain:3, aura:5, desc:'力量 +3。每回合造成 5 点伤害。' },
 };
 
 // ============================================================
@@ -176,8 +186,8 @@ const GAME_MODES = {
         enemyPowerMultiplier: 0.8,
         floorHeal: 16,
         bossHeal: 32,
-        goldDrop: [14, 22],
-        bossGoldDrop: [45, 65]
+        goldDrop: [10, 16],
+        bossGoldDrop: [32, 48]
     },
     hard: {
         id: 'hard',
@@ -188,8 +198,8 @@ const GAME_MODES = {
         enemyPowerMultiplier: 1,
         floorHeal: 12,
         bossHeal: 25,
-        goldDrop: [10, 18],
-        bossGoldDrop: [35, 55]
+        goldDrop: [16, 24],
+        bossGoldDrop: [55, 80]
     }
 };
 let selectedMode = normalizeGameMode(localStorage.getItem(GAME_MODE_KEY) || DEFAULT_GAME_MODE);
@@ -304,8 +314,6 @@ function newGame(mode = selectedMode) {
     G = {
         mode: normalizedMode,
         floor: 1,
-        gold: 0,
-        shopOfferedFloor: 0,
         played: 0,       // cards played this turn
         acting: false,    // lock during animations
         player: {
@@ -341,7 +349,7 @@ function awardGold(wasBoss) {
     const modeConfig = getGameModeConfig(G.mode);
     const [min, max] = wasBoss ? modeConfig.bossGoldDrop : modeConfig.goldDrop;
     const amount = randomInt(min, max);
-    G.gold = Math.max(0, Number(G.gold || 0)) + amount;
+    addGoldBalance(amount);
     floatText(`+${amount} 金币`, playerSprite, 'gold-text');
     updateUI();
     return amount;
@@ -776,9 +784,13 @@ function winFloor() {
 
 function showRewardScreen(onDone = afterReward) {
     rewardCardsContainer.innerHTML = '';
-    const pool = [...REWARD_POOL];
+    const pool = getUnlockedRewardPool();
     shuffle(pool);
     const picks = pool.slice(0, 3);
+
+    if (!picks.length) {
+        rewardCardsContainer.innerHTML = '<div class="leaderboard-empty">暂无可加入的已解锁卡牌，先去卡牌图鉴解锁新卡。</div>';
+    }
 
     picks.forEach(id => {
         const card = makeCard(id);
@@ -805,77 +817,7 @@ skipRewardBtn.onclick = () => {
 };
 
 function afterReward() {
-    afterPostCombatRewards();
-}
-
-let currentShopOffers = [];
-let currentShopDone = null;
-
-function shouldOfferShop() {
-    if (!G) return false;
-    if (G.shopOfferedFloor === G.floor) return false;
-    return G.floor > 1 && (G.floor % 3 === 0 || (G.floor - 1) % 5 === 0);
-}
-
-function afterPostCombatRewards() {
-    if (shouldOfferShop()) {
-        showShopScreen(startFloor);
-    } else {
-        startFloor();
-    }
-}
-
-function showShopScreen(onDone = startFloor) {
-    if (!shopScreen || !shopCardsContainer) {
-        onDone();
-        return;
-    }
-    G.shopOfferedFloor = G.floor;
-    currentShopDone = onDone;
-    const pool = [...SHOP_CARD_POOL];
-    shuffle(pool);
-    currentShopOffers = pool.slice(0, 3).map(id => ({ id, sold: false }));
-    renderShopOffers();
-    shopScreen.classList.remove('hidden');
-}
-
-function renderShopOffers() {
-    if (!shopCardsContainer) return;
-    shopCardsContainer.innerHTML = '';
-    if (shopGoldEl) shopGoldEl.textContent = `金币：${Math.max(0, Number(G?.gold || 0))}`;
-
-    currentShopOffers.forEach((offer, index) => {
-        const cardData = CARDS[offer.id];
-        const price = cardData.price || 50;
-        const wrap = document.createElement('div');
-        wrap.className = 'shop-offer';
-
-        const cardEl = buildCardEl(makeCard(offer.id), false);
-        const buyBtn = document.createElement('button');
-        buyBtn.className = 'btn-gold shop-buy-btn';
-        buyBtn.disabled = offer.sold || (G.gold || 0) < price;
-        buyBtn.textContent = offer.sold ? '已购买' : `购买 ${price}`;
-        buyBtn.onclick = () => buyShopCard(index);
-
-        wrap.append(cardEl, buyBtn);
-        shopCardsContainer.appendChild(wrap);
-    });
-}
-
-function buyShopCard(index) {
-    const offer = currentShopOffers[index];
-    if (!offer || offer.sold) return;
-    const cardData = CARDS[offer.id];
-    const price = cardData.price || 50;
-    if ((G.gold || 0) < price) {
-        if (shopGoldEl) shopGoldEl.textContent = `金币不足：${Math.max(0, Number(G.gold || 0))}`;
-        return;
-    }
-    G.gold -= price;
-    offer.sold = true;
-    G.player.deck.push(makeCard(offer.id));
-    renderShopOffers();
-    updateUI();
+    startFloor();
 }
 
 function showBossChoiceScreen() {
@@ -888,7 +830,7 @@ function afterBossDeckChoice() {
         showUpgradeScreen();
         return;
     }
-    afterPostCombatRewards();
+    startFloor();
 }
 
 function getAllPlayerCardsWithPiles() {
@@ -1030,8 +972,6 @@ function createSaveData() {
         mode: getActiveGameMode(),
         savedAt: new Date().toISOString(),
         floor: G.floor,
-        gold: Math.max(0, Number(G.gold || 0)),
-        shopOfferedFloor: Math.max(0, Number(G.shopOfferedFloor || 0)),
         played: G.played || 0,
         pendingUpgrade: !!G.pendingUpgrade,
         player: {
@@ -1077,8 +1017,6 @@ function loadSnapshotSave(save) {
     G = {
         mode: normalizeGameMode(save.mode, LEGACY_GAME_MODE),
         floor: toFloorNumber(save.floor, 1),
-        gold: Math.max(0, Number(save.gold || 0)),
-        shopOfferedFloor: Math.max(0, Number(save.shopOfferedFloor || 0)),
         played: Math.max(0, Number(save.played || 0)),
         acting: false,
         pendingUpgrade: !!save.pendingUpgrade,
@@ -1118,8 +1056,6 @@ function loadLegacySave(save) {
     G = {
         mode: LEGACY_GAME_MODE,
         floor: toFloorNumber(save.floor, 1),
-        gold: Math.max(0, Number(save.gold || 0)),
-        shopOfferedFloor: 0,
         played: 0,
         acting: false,
         player: {
@@ -1185,7 +1121,6 @@ function resumeSavedGame() {
     gameOverScreen.classList.add('hidden');
     rewardScreen.classList.add('hidden');
     upgradeScreen.classList.add('hidden');
-    shopScreen.classList.add('hidden');
     bossChoiceScreen.classList.add('hidden');
     removeCardScreen.classList.add('hidden');
     pileViewScreen.classList.add('hidden');
@@ -1249,7 +1184,9 @@ function showPileView() {
 const USER_KEY = 'arcane_quest_user';
 const LOCAL_USERS_KEY = 'arcane_quest_local_users';
 const LOCAL_LEADERBOARD_KEY = 'arcane_quest_local_leaderboard';
+const PROGRESSION_KEY_PREFIX = 'arcane_quest_progress_';
 let currentUser = loadUserProfile();
+let playerProgress = null;
 
 function readJson(key, fallback) {
     try {
@@ -1325,7 +1262,93 @@ function loadUserProfile() {
 function saveUserProfile(user) {
     currentUser = normalizeUser(user);
     if (currentUser) writeJson(USER_KEY, currentUser);
+    playerProgress = loadProgressProfile();
     updateUserPanel();
+}
+
+function getProgressKey() {
+    return `${PROGRESSION_KEY_PREFIX}${currentUser ? currentUser.id : 'guest'}`;
+}
+
+function getUnlockPrice(cardId) {
+    return CARDS[cardId]?.unlockPrice || CARD_UNLOCK_PRICES[cardId] || 60;
+}
+
+function normalizeProgress(progress) {
+    const rawUnlocked = Array.isArray(progress?.unlockedCards) ? progress.unlockedCards : [];
+    const unlocked = new Set([...BASIC_UNLOCKED_CARDS, ...rawUnlocked].filter(id => CARDS[id] && id !== 'wound'));
+    return {
+        goldBalance: Math.max(0, Math.floor(Number(progress?.goldBalance || progress?.gold || 0))),
+        unlockedCards: Array.from(unlocked),
+        starterBundleClaimed: !!progress?.starterBundleClaimed
+    };
+}
+
+function loadProgressProfile() {
+    return normalizeProgress(readJson(getProgressKey(), null));
+}
+
+function getPlayerProgress() {
+    if (!playerProgress) playerProgress = loadProgressProfile();
+    return playerProgress;
+}
+
+function saveProgressProfile() {
+    const progress = normalizeProgress(getPlayerProgress());
+    playerProgress = progress;
+    writeJson(getProgressKey(), progress);
+    updateUserPanel();
+    if (goldCountEl) goldCountEl.textContent = progress.goldBalance;
+}
+
+function getGoldBalance() {
+    return getPlayerProgress().goldBalance;
+}
+
+function addGoldBalance(amount) {
+    const progress = getPlayerProgress();
+    progress.goldBalance = Math.max(0, progress.goldBalance + Math.max(0, Math.floor(Number(amount || 0))));
+    saveProgressProfile();
+}
+
+function isCardUnlocked(cardId) {
+    if (!CARDS[cardId] || cardId === 'wound') return false;
+    return getPlayerProgress().unlockedCards.includes(cardId);
+}
+
+function unlockCard(cardId) {
+    if (!CARDS[cardId] || isCardUnlocked(cardId)) return false;
+    const price = getUnlockPrice(cardId);
+    const progress = getPlayerProgress();
+    if (progress.goldBalance < price) return false;
+    progress.goldBalance -= price;
+    progress.unlockedCards = Array.from(new Set([...progress.unlockedCards, cardId]));
+    saveProgressProfile();
+    return true;
+}
+
+function claimStarterBundle() {
+    const progress = getPlayerProgress();
+    if (progress.starterBundleClaimed) return false;
+    progress.unlockedCards = Array.from(new Set([...progress.unlockedCards, ...STARTER_BUNDLE_CARDS]));
+    progress.starterBundleClaimed = true;
+    saveProgressProfile();
+    return true;
+}
+
+function getUnlockedRewardPool() {
+    const unlocked = getPlayerProgress().unlockedCards;
+    const candidates = [...UNLOCKABLE_CARD_POOL, ...BASIC_UNLOCKED_CARDS];
+    return candidates.filter((id, index) =>
+        candidates.indexOf(id) === index &&
+        unlocked.includes(id) &&
+        CARDS[id] &&
+        id !== 'wound'
+    );
+}
+
+function isSpecialCard(cardId) {
+    return SPECIAL_CARD_POOL.includes(cardId);
 }
 
 async function sha256Hex(text) {
@@ -1483,8 +1506,9 @@ function updateUserPanel() {
     if (!currentUsernameEl || !currentUserBestEl || !registerOpenBtn) return;
     const modeConfig = getGameModeConfig(selectedMode);
     const bestFloor = user ? getUserBestFloor(user, selectedMode) : 1;
+    const gold = getGoldBalance();
     currentUsernameEl.textContent = user ? user.username : '游客';
-    currentUserBestEl.textContent = user ? `${modeConfig.shortLabel}最高第 ${bestFloor} 层` : '未记录关卡';
+    currentUserBestEl.textContent = user ? `${modeConfig.shortLabel}最高第 ${bestFloor} 层 · 金币 ${gold}` : `金币 ${gold}`;
     registerOpenBtn.textContent = user ? '切换账号' : '登录/注册';
     if (changePasswordOpenBtn) changePasswordOpenBtn.classList.toggle('hidden', !user);
 }
@@ -1758,7 +1782,6 @@ function showMainMenu() {
     gameOverScreen.classList.add('hidden');
     rewardScreen.classList.add('hidden');
     upgradeScreen.classList.add('hidden');
-    shopScreen.classList.add('hidden');
     bossChoiceScreen.classList.add('hidden');
     removeCardScreen.classList.add('hidden');
     pileViewScreen.classList.add('hidden');
@@ -1830,14 +1853,6 @@ leaderboardModeButtons.forEach(button => {
 if (soundToggleBtn) soundToggleBtn.onclick = () => toggleSound();
 deckPile.onclick = () => showPileView();
 closePileViewBtn.onclick = () => pileViewScreen.classList.add('hidden');
-if (leaveShopBtn) {
-    leaveShopBtn.onclick = () => {
-        shopScreen.classList.add('hidden');
-        const done = currentShopDone || startFloor;
-        currentShopDone = null;
-        done();
-    };
-}
 bossAddCardBtn.onclick = () => {
     bossChoiceScreen.classList.add('hidden');
     showRewardScreen(afterBossDeckChoice);
@@ -1902,19 +1917,76 @@ function showCardGuide(fromMenu) {
 
 function populateGuideTab(tab) {
     if (tab === 'cards') {
-        guideBody.innerHTML = '<div class="guide-card-grid"></div>';
+        const progress = getPlayerProgress();
+        const bundleRemaining = STARTER_BUNDLE_CARDS.filter(id => !isCardUnlocked(id)).length;
+        guideBody.innerHTML = `
+            <div class="guide-wallet">金币余额：<strong>${getGoldBalance()}</strong></div>
+            <div class="starter-bundle-panel ${progress.starterBundleClaimed ? 'claimed' : ''}">
+                <div>
+                    <strong>新手礼包</strong>
+                    <span>${progress.starterBundleClaimed ? '已领取' : `可解锁 ${bundleRemaining} 张普通卡`}</span>
+                </div>
+                <button id="claim-starter-bundle-btn" class="btn-gold starter-bundle-btn" ${progress.starterBundleClaimed ? 'disabled' : ''}>
+                    ${progress.starterBundleClaimed ? '已领取' : '领取礼包'}
+                </button>
+            </div>
+            <div class="guide-card-grid unlock-card-grid"></div>
+        `;
+        const starterBundleBtn = document.getElementById('claim-starter-bundle-btn');
+        if (starterBundleBtn) {
+            starterBundleBtn.onclick = () => {
+                if (claimStarterBundle()) populateGuideTab('cards');
+            };
+        }
         const grid = guideBody.querySelector('.guide-card-grid');
-        const cardIds = Object.keys(CARDS).filter(id => id !== 'wound');
+        const cardIds = [...BASIC_UNLOCKED_CARDS, ...REWARD_POOL, ...SPECIAL_CARD_POOL];
         cardIds.forEach(id => {
             const card = { ...CARDS[id] };
+            const unlocked = isCardUnlocked(id);
+            const unlockable = UNLOCKABLE_CARD_POOL.includes(id);
+            const price = getUnlockPrice(id);
+            const entry = document.createElement('div');
+            entry.className = 'guide-card-entry';
+            if (!unlocked) entry.classList.add('locked-entry');
+            if (isSpecialCard(id)) entry.classList.add('special-entry');
+
             const el = buildCardEl(card, false);
-            grid.appendChild(el);
+            if (!unlocked) el.classList.add('locked-card');
+            entry.appendChild(el);
+
+            const status = document.createElement('div');
+            status.className = 'card-unlock-status';
+            if (unlocked && BASIC_UNLOCKED_CARDS.includes(id)) {
+                status.textContent = '初始拥有';
+            } else if (unlocked) {
+                status.textContent = '已解锁';
+            } else if (unlockable) {
+                const button = document.createElement('button');
+                button.className = 'btn-gold unlock-card-btn';
+                button.disabled = getGoldBalance() < price;
+                button.textContent = getGoldBalance() >= price ? `解锁 ${price}` : `金币不足 ${price}`;
+                button.onclick = () => {
+                    if (unlockCard(id)) populateGuideTab('cards');
+                };
+                status.appendChild(button);
+            }
+
+            entry.appendChild(status);
+            grid.appendChild(entry);
 
             // Show upgraded version too
-            if (CARD_UPGRADES[id]) {
+            if (unlocked && CARD_UPGRADES[id]) {
                 const upCard = { ...CARDS[id], ...CARD_UPGRADES[id], upgraded: true };
                 const upEl = buildCardEl(upCard, false);
-                grid.appendChild(upEl);
+                const upEntry = document.createElement('div');
+                upEntry.className = 'guide-card-entry upgraded-entry';
+                if (isSpecialCard(id)) upEntry.classList.add('special-entry');
+                upEntry.appendChild(upEl);
+                const upStatus = document.createElement('div');
+                upStatus.className = 'card-unlock-status';
+                upStatus.textContent = '升级预览';
+                upEntry.appendChild(upStatus);
+                grid.appendChild(upEntry);
             }
         });
     } else if (tab === 'status') {
@@ -2064,6 +2136,7 @@ function buildCardEl(card, interactive = true) {
     let classes = `card card-type-${card.type}`;
     if (!canPlay && interactive) classes += ' unplayable';
     if (card.upgraded) classes += ' upgraded';
+    if (isSpecialCard(card.id)) classes += ' special-card';
     el.className = classes;
 
     const costDisplay = card.type === 'curse' ? '✕' : card.cost;
@@ -2120,7 +2193,7 @@ function updateUI() {
     // Energy & piles
     currentEnergyEl.textContent = p.energy;
     maxEnergyEl.textContent = p.maxEnergy;
-    if (goldCountEl) goldCountEl.textContent = Math.max(0, Number(G.gold || 0));
+    if (goldCountEl) goldCountEl.textContent = getGoldBalance();
     deckCountEl.textContent = p.deck.length;
     discardCountEl.textContent = p.discard.length;
 

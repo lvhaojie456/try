@@ -291,6 +291,42 @@ body, html {
     transform: scale(1.15) translateY(-10px);
     box-shadow: 0 20px 40px rgba(0,0,0,0.9), 0 0 25px rgba(212,175,55,0.6);
 }
+.card.special-card {
+    animation: specialCardGlow 2.6s ease-in-out infinite;
+}
+.card.special-card::before {
+    content: '';
+    position: absolute;
+    inset: -35%;
+    background:
+        radial-gradient(circle at 22% 28%, rgba(255,255,255,0.95) 0 1.5px, transparent 3px),
+        radial-gradient(circle at 70% 18%, rgba(246,211,101,0.9) 0 1.5px, transparent 3px),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,0.8) 0 1px, transparent 3px),
+        linear-gradient(115deg, transparent 28%, rgba(255,255,255,0.32) 48%, transparent 68%);
+    opacity: 0.7;
+    transform: translateX(-28%) rotate(8deg);
+    animation: specialSparkleSweep 2.4s linear infinite;
+    pointer-events: none;
+    z-index: 3;
+}
+.card.special-card .card-cost,
+.card.special-card .card-type-badge,
+.card.special-card .card-title,
+.card.special-card .card-desc {
+    z-index: 4;
+}
+.card.locked-card {
+    filter: grayscale(0.85) brightness(0.55);
+}
+@keyframes specialCardGlow {
+    0%, 100% { box-shadow: 0 8px 20px rgba(0,0,0,0.7), 0 0 12px rgba(246,211,101,0.28); }
+    50% { box-shadow: 0 12px 26px rgba(0,0,0,0.82), 0 0 28px rgba(246,211,101,0.72); }
+}
+@keyframes specialSparkleSweep {
+    0% { transform: translateX(-38%) rotate(8deg); opacity: 0.2; }
+    35% { opacity: 0.85; }
+    100% { transform: translateX(38%) rotate(8deg); opacity: 0.18; }
+}
 
 .card-cost {
     position: absolute; top: -6px; left: -6px;
@@ -586,35 +622,6 @@ body, html {
 .card-selection-container {
     display: flex; gap: 15px;
     margin: 20px 0; justify-content: center;
-}
-.shop-content {
-    width: min(760px, calc(100vw - 28px));
-}
-.shop-card-grid {
-    display: flex;
-    justify-content: center;
-    gap: 14px;
-    margin: 18px 0 20px;
-    flex-wrap: wrap;
-}
-.shop-offer {
-    width: 150px;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-}
-.shop-offer .card {
-    margin-top: 0;
-}
-.shop-buy-btn {
-    min-height: 38px;
-    padding: 8px 10px;
-    font-size: 13px;
-}
-.shop-buy-btn:disabled {
-    cursor: not-allowed;
-    filter: grayscale(0.7) brightness(0.65);
 }
 .boss-choice-content {
     width: min(560px, calc(100vw - 28px));
@@ -981,12 +988,101 @@ body, html {
     display: flex; flex-wrap: wrap; gap: 12px;
     justify-content: center;
 }
+.guide-wallet {
+    margin: 0 auto 14px;
+    padding: 10px 14px;
+    width: fit-content;
+    color: #ffe28a;
+    background: rgba(0,0,0,0.42);
+    border: 1px solid rgba(212,175,55,0.32);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 800;
+}
+.starter-bundle-panel {
+    width: min(520px, 100%);
+    min-height: 64px;
+    margin: 0 auto 16px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #f8e8a3;
+    background:
+        linear-gradient(135deg, rgba(212,175,55,0.2), rgba(0,0,0,0.42)),
+        rgba(16,18,34,0.88);
+    border: 1px solid rgba(212,175,55,0.5);
+    border-radius: 8px;
+    box-shadow: 0 0 22px rgba(212,175,55,0.14);
+}
+.starter-bundle-panel strong {
+    display: block;
+    color: #f5d56b;
+    font-size: 15px;
+    line-height: 1.25;
+}
+.starter-bundle-panel span {
+    display: block;
+    margin-top: 3px;
+    color: #cfc8a8;
+    font-size: 12px;
+}
+.starter-bundle-panel.claimed {
+    filter: grayscale(0.35);
+    opacity: 0.8;
+}
+.starter-bundle-btn {
+    min-width: 108px;
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 13px;
+}
+.starter-bundle-btn:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.65) brightness(0.75);
+}
+.guide-card-entry {
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+.guide-card-entry.locked-entry {
+    opacity: 0.9;
+}
+.guide-card-entry.special-entry {
+    filter: drop-shadow(0 0 10px rgba(246,211,101,0.18));
+}
 .guide-card-grid .card {
     margin-top: 0; cursor: default; flex-shrink: 0;
 }
 .guide-card-grid .card:hover {
     transform: scale(1.08) translateY(-5px);
     margin-top: 0;
+}
+.card-unlock-status {
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d4af37;
+    background: rgba(0,0,0,0.36);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 900;
+}
+.unlock-card-btn {
+    width: 100%;
+    min-height: 36px;
+    padding: 7px 9px;
+    font-size: 12px;
+}
+.unlock-card-btn:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.75) brightness(0.7);
 }
 .guide-status-list {
     display: grid; grid-template-columns: 1fr 1fr;
@@ -1407,8 +1503,7 @@ body, html {
     }
 
     .guide-card-grid,
-    .card-selection-container,
-    .shop-card-grid {
+    .card-selection-container {
         justify-content: flex-start;
         gap: 10px;
         overflow-x: auto;
@@ -1423,14 +1518,24 @@ body, html {
         margin-top: 0;
     }
 
-    .shop-offer {
+    .guide-card-entry {
         flex: 0 0 auto;
         width: 124px;
     }
 
-    .shop-offer .card {
+    .guide-card-entry .card {
         width: 118px;
         height: 174px;
+    }
+
+    .starter-bundle-panel {
+        align-items: stretch;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .starter-bundle-btn {
+        width: 100%;
     }
 
     .tutorial-grid,
