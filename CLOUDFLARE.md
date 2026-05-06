@@ -35,12 +35,24 @@ database_id = "你的 database_id"
 npx wrangler d1 execute arcane-quest-db --remote --file=./schema.sql
 ```
 
+如果你的数据库已经创建过旧版 `users` 表，请只运行一次密码字段迁移。已有用户会先使用默认密码 `123456`：
+
+```bash
+npx wrangler d1 execute arcane-quest-db --remote --file=./migrations/0001_add_passwords.sql
+```
+
 ## 5. 本地用 Cloudflare Pages Functions 测试
 
 先初始化本地 D1：
 
 ```bash
 npx wrangler d1 execute arcane-quest-db --local --file=./schema.sql
+```
+
+如果本地也有旧版数据库，同样只运行一次：
+
+```bash
+npx wrangler d1 execute arcane-quest-db --local --file=./migrations/0001_add_passwords.sql
 ```
 
 再启动 Pages 本地环境：

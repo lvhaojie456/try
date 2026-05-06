@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     best_floor INTEGER NOT NULL DEFAULT 1 CHECK (best_floor >= 1),
+    password_salt TEXT,
+    password_hash TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

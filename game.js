@@ -55,12 +55,22 @@ const saveToast = document.getElementById('save-toast');
 const currentUsernameEl = document.getElementById('current-username');
 const currentUserBestEl = document.getElementById('current-user-best');
 const registerOpenBtn = document.getElementById('register-open-btn');
+const changePasswordOpenBtn = document.getElementById('change-password-open-btn');
 const registerScreen = document.getElementById('register-screen');
 const registerForm = document.getElementById('register-form');
 const usernameInput = document.getElementById('username-input');
+const passwordInput = document.getElementById('password-input');
 const registerMessage = document.getElementById('register-message');
+const loginSubmitBtn = document.getElementById('login-submit-btn');
 const registerSubmitBtn = document.getElementById('register-submit-btn');
 const cancelRegisterBtn = document.getElementById('cancel-register-btn');
+const changePasswordScreen = document.getElementById('change-password-screen');
+const changePasswordForm = document.getElementById('change-password-form');
+const currentPasswordInput = document.getElementById('current-password-input');
+const newPasswordInput = document.getElementById('new-password-input');
+const changePasswordMessage = document.getElementById('change-password-message');
+const changePasswordSubmitBtn = document.getElementById('change-password-submit-btn');
+const cancelChangePasswordBtn = document.getElementById('cancel-change-password-btn');
 const leaderboardBtn = document.getElementById('leaderboard-btn');
 const leaderboardScreen = document.getElementById('leaderboard-screen');
 const leaderboardList = document.getElementById('leaderboard-list');
@@ -984,6 +994,7 @@ function resumeSavedGame() {
     bossChoiceScreen.classList.add('hidden');
     removeCardScreen.classList.add('hidden');
     pileViewScreen.classList.add('hidden');
+    changePasswordScreen.classList.add('hidden');
     tutorialScreen.classList.add('hidden');
     floorBanner.classList.add('hidden');
     mainMenu.classList.add('hidden');
@@ -1041,6 +1052,7 @@ function showPileView() {
 // USER PROFILE & LEADERBOARD
 // ============================================================
 const USER_KEY = 'arcane_quest_user';
+const LOCAL_USERS_KEY = 'arcane_quest_local_users';
 const LOCAL_LEADERBOARD_KEY = 'arcane_quest_local_leaderboard';
 let currentUser = loadUserProfile();
 
@@ -1063,8 +1075,13 @@ function cleanUsername(value) {
 
 function validateUsername(username) {
     const len = Array.from(username).length;
-    if (len < 2 || len > 16) return '玩家名需要 2-16 个字符。';
-    if (!/^[\p{L}\p{N}_ -]+$/u.test(username)) return '玩家名只能包含文字、数字、空格、下划线或短横线。';
+    if (len < 2 || len > 16) return '账号需要 2-16 个字符。';
+    if (!/^[\p{L}\p{N}_ -]+$/u.test(username)) return '账号只能包含文字、数字、空格、下划线或短横线。';
+    return '';
+}
+
+function validatePassword(password) {
+    if (!password || password.length < 6 || password.length > 32) return '密码需要 6-32 位。';
     return '';
 }
 
@@ -1096,6 +1113,67 @@ function saveUserProfile(user) {
     currentUser = normalizeUser(user);
     if (currentUser) writeJson(USER_KEY, currentUser);
     updateUserPanel();
+}
+
+async function sha256Hex(text) {
+    const data = new TextEncoder().encode(text);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function getLocalUsers() {
+    const users = readJson(LOCAL_USERS_KEY, {});
+    return users && typeof users === 'object' ? users : {};
+}
+
+function saveLocalUsers(users) {
+    writeJson(LOCAL_USERS_KEY, users);
+}
+
+async function makeLocalPasswordRecord(password) {
+    const salt = makeLocalUserId();
+    return {
+        passwordSalt: salt,
+        passwordHash: await sha256Hex(`${salt}:${password}`)
+    };
+}
+
+async function verifyLocalPassword(user, password) {
+    if (!user.passwordHash || !user.passwordSalt) return password === '123456';
+    return await sha256Hex(`${user.passwordSalt}:${password}`) === user.passwordHash;
+}
+
+async function registerLocalUser(username, password, reachedFloor) {
+    const users = getLocalUsers();
+    if (users[username]) throw apiError('这个账号已被占用。', 409);
+    const passwordRecord = await makeLocalPasswordRecord(password);
+    const user = {
+        id: makeLocalUserId(),
+        username,
+        bestFloor: reachedFloor,
+        source: 'local',
+        ...passwordRecord
+    };
+    users[username] = user;
+    saveLocalUsers(users);
+    updateLocalLeaderboard(user, reachedFloor);
+    return normalizeUser(user);
+}
+
+async function loginLocalUser(username, password) {
+    const users = getLocalUsers();
+    const user = users[username];
+    if (!user || !(await verifyLocalPassword(user, password))) throw apiError('账号或密码错误。', 401);
+    return normalizeUser(user);
+}
+
+async function changeLocalPassword(user, currentPassword, newPassword) {
+    const users = getLocalUsers();
+    const local = users[user.username];
+    if (!local || !(await verifyLocalPassword(local, currentPassword))) throw apiError('当前密码错误。', 401);
+    Object.assign(local, await makeLocalPasswordRecord(newPassword));
+    users[user.username] = local;
+    saveLocalUsers(users);
 }
 
 function apiError(message, status) {
@@ -1163,7 +1241,8 @@ function updateUserPanel() {
     if (!currentUsernameEl || !currentUserBestEl || !registerOpenBtn) return;
     currentUsernameEl.textContent = user ? user.username : '游客';
     currentUserBestEl.textContent = user ? `最高到达第 ${user.bestFloor} 层` : '未记录关卡';
-    registerOpenBtn.textContent = user ? '切换' : '注册';
+    registerOpenBtn.textContent = user ? '切换账号' : '登录/注册';
+    if (changePasswordOpenBtn) changePasswordOpenBtn.classList.toggle('hidden', !user);
 }
 
 function setRegisterMessage(text, type = '') {
@@ -1174,20 +1253,48 @@ function setRegisterMessage(text, type = '') {
 function showRegisterScreen() {
     registerScreen.classList.remove('hidden');
     usernameInput.value = currentUser ? currentUser.username : '';
+    passwordInput.value = '';
     setRegisterMessage('');
-    setTimeout(() => usernameInput.focus(), 0);
+    setTimeout(() => (currentUser ? passwordInput : usernameInput).focus(), 0);
 }
 
 function closeRegisterScreen() {
     registerScreen.classList.add('hidden');
 }
 
+function setChangePasswordMessage(text, type = '') {
+    changePasswordMessage.textContent = text;
+    changePasswordMessage.className = `form-message ${type}`.trim();
+}
+
+function showChangePasswordScreen() {
+    if (!currentUser) {
+        showRegisterScreen();
+        return;
+    }
+    changePasswordScreen.classList.remove('hidden');
+    currentPasswordInput.value = '';
+    newPasswordInput.value = '';
+    setChangePasswordMessage('');
+    setTimeout(() => currentPasswordInput.focus(), 0);
+}
+
+function closeChangePasswordScreen() {
+    changePasswordScreen.classList.add('hidden');
+}
+
 async function handleRegisterSubmit(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
     const username = cleanUsername(usernameInput.value);
+    const password = passwordInput.value;
     const validationError = validateUsername(username);
     if (validationError) {
         setRegisterMessage(validationError, 'error');
+        return;
+    }
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+        setRegisterMessage(passwordError, 'error');
         return;
     }
 
@@ -1199,7 +1306,7 @@ async function handleRegisterSubmit(event) {
     try {
         const data = await apiRequest('/api/register', {
             method: 'POST',
-            body: JSON.stringify({ username })
+            body: JSON.stringify({ username, password })
         });
         const user = normalizeUser({
             id: data.user.id,
@@ -1213,23 +1320,101 @@ async function handleRegisterSubmit(event) {
         setTimeout(closeRegisterScreen, 500);
     } catch(e) {
         if (e.status === 409) {
-            setRegisterMessage('这个玩家名已被占用。', 'error');
+            setRegisterMessage('这个账号已被占用。', 'error');
         } else if (e.status === 400) {
-            setRegisterMessage(e.message || '玩家名不符合要求。', 'error');
+            setRegisterMessage(e.message || '账号或密码不符合要求。', 'error');
         } else {
-            const user = {
-                id: makeLocalUserId(),
-                username,
-                bestFloor: reachedFloor,
-                source: 'local'
-            };
-            saveUserProfile(user);
-            updateLocalLeaderboard(user, reachedFloor);
-            setRegisterMessage('已创建本地玩家，连接 Cloudflare 后会使用云端榜单。', 'success');
-            setTimeout(closeRegisterScreen, 900);
+            try {
+                const user = await registerLocalUser(username, password, reachedFloor);
+                saveUserProfile(user);
+                setRegisterMessage('已创建本地账号，连接 Cloudflare 后会使用云端账号。', 'success');
+                setTimeout(closeRegisterScreen, 900);
+            } catch(localError) {
+                setRegisterMessage(localError.message || '本地注册失败。', 'error');
+            }
         }
     } finally {
         registerSubmitBtn.disabled = false;
+    }
+}
+
+async function handleLoginSubmit() {
+    const username = cleanUsername(usernameInput.value);
+    const password = passwordInput.value;
+    const validationError = validateUsername(username);
+    const passwordError = validatePassword(password);
+    if (validationError || passwordError) {
+        setRegisterMessage(validationError || passwordError, 'error');
+        return;
+    }
+
+    loginSubmitBtn.disabled = true;
+    setRegisterMessage('正在登录...');
+
+    try {
+        const data = await apiRequest('/api/login', {
+            method: 'POST',
+            body: JSON.stringify({ username, password })
+        });
+        saveUserProfile(normalizeUser({
+            id: data.user.id,
+            username: data.user.username,
+            bestFloor: data.user.bestFloor || data.user.best_floor || 1,
+            source: 'cloud'
+        }));
+        setRegisterMessage('登录成功。', 'success');
+        setTimeout(closeRegisterScreen, 500);
+    } catch(e) {
+        if (e.status === 401 || e.status === 404) {
+            setRegisterMessage('账号或密码错误。', 'error');
+        } else {
+            try {
+                saveUserProfile(await loginLocalUser(username, password));
+                setRegisterMessage('已登录本地账号。', 'success');
+                setTimeout(closeRegisterScreen, 500);
+            } catch(localError) {
+                setRegisterMessage('云端暂不可用，且本地没有这个账号。', 'error');
+            }
+        }
+    } finally {
+        loginSubmitBtn.disabled = false;
+    }
+}
+
+async function handleChangePasswordSubmit(event) {
+    event.preventDefault();
+    if (!currentUser) return;
+
+    const currentPassword = currentPasswordInput.value;
+    const newPassword = newPasswordInput.value;
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+        setChangePasswordMessage(passwordError, 'error');
+        return;
+    }
+
+    changePasswordSubmitBtn.disabled = true;
+    setChangePasswordMessage('正在保存...');
+
+    try {
+        if (currentUser.source === 'cloud') {
+            await apiRequest('/api/password', {
+                method: 'POST',
+                body: JSON.stringify({
+                    userId: currentUser.id,
+                    currentPassword,
+                    newPassword
+                })
+            });
+        } else {
+            await changeLocalPassword(currentUser, currentPassword, newPassword);
+        }
+        setChangePasswordMessage('密码已修改。', 'success');
+        setTimeout(closeChangePasswordScreen, 700);
+    } catch(e) {
+        setChangePasswordMessage(e.message || '修改密码失败。', 'error');
+    } finally {
+        changePasswordSubmitBtn.disabled = false;
     }
 }
 
@@ -1323,6 +1508,7 @@ function showMainMenu() {
     pileViewScreen.classList.add('hidden');
     tutorialScreen.classList.add('hidden');
     registerScreen.classList.add('hidden');
+    changePasswordScreen.classList.add('hidden');
     leaderboardScreen.classList.add('hidden');
     floorBanner.classList.add('hidden');
     saveToast.classList.add('hidden');
@@ -1364,7 +1550,14 @@ cardGuideBtn.onclick = () => {
 
 registerOpenBtn.onclick = () => showRegisterScreen();
 cancelRegisterBtn.onclick = () => closeRegisterScreen();
-registerForm.addEventListener('submit', handleRegisterSubmit);
+registerForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    handleLoginSubmit();
+});
+registerSubmitBtn.onclick = () => handleRegisterSubmit();
+changePasswordOpenBtn.onclick = () => showChangePasswordScreen();
+cancelChangePasswordBtn.onclick = () => closeChangePasswordScreen();
+changePasswordForm.addEventListener('submit', handleChangePasswordSubmit);
 leaderboardBtn.onclick = () => showLeaderboardScreen();
 refreshLeaderboardBtn.onclick = () => refreshLeaderboard();
 closeLeaderboardBtn.onclick = () => closeLeaderboardScreen();

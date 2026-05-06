@@ -22,7 +22,10 @@
                         <strong id="current-username">游客</strong>
                         <small id="current-user-best">未记录关卡</small>
                     </div>
-                    <button id="register-open-btn" class="btn-ghost">注册</button>
+                    <div class="user-panel-actions">
+                        <button id="register-open-btn" class="btn-ghost">登录/注册</button>
+                        <button id="change-password-open-btn" class="btn-ghost hidden">改密码</button>
+                    </div>
                 </div>
                 <div class="menu-buttons">
                     <button id="new-game-btn" class="btn-gold big-btn menu-btn">⚔️ 开始新游戏</button>
@@ -57,17 +60,38 @@
             </div>
         </div>
 
-        <!-- 用户注册 -->
+        <!-- 用户登录 / 注册 -->
         <div id="register-screen" class="overlay hidden">
             <div class="overlay-content auth-content">
-                <h2>注册玩家</h2>
+                <h2>账户登录</h2>
                 <form id="register-form" class="auth-form">
-                    <label for="username-input">玩家名</label>
-                    <input id="username-input" type="text" maxlength="16" autocomplete="username" placeholder="输入 2-16 位名字">
+                    <label for="username-input">账号</label>
+                    <input id="username-input" type="text" maxlength="16" autocomplete="username" placeholder="输入 2-16 位账号">
+                    <label for="password-input">密码</label>
+                    <input id="password-input" type="password" maxlength="32" autocomplete="current-password" placeholder="输入密码">
                     <p id="register-message" class="form-message"></p>
                     <div class="dialog-actions">
-                        <button type="submit" id="register-submit-btn" class="btn-gold">创建玩家</button>
+                        <button type="submit" id="login-submit-btn" class="btn-gold">登录</button>
+                        <button type="button" id="register-submit-btn" class="btn-ghost">注册</button>
                         <button type="button" id="cancel-register-btn" class="btn-ghost">返回</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 修改密码 -->
+        <div id="change-password-screen" class="overlay hidden">
+            <div class="overlay-content auth-content">
+                <h2>修改密码</h2>
+                <form id="change-password-form" class="auth-form">
+                    <label for="current-password-input">当前密码</label>
+                    <input id="current-password-input" type="password" maxlength="32" autocomplete="current-password" placeholder="已有账号默认密码 123456">
+                    <label for="new-password-input">新密码</label>
+                    <input id="new-password-input" type="password" maxlength="32" autocomplete="new-password" placeholder="至少 6 位">
+                    <p id="change-password-message" class="form-message"></p>
+                    <div class="dialog-actions">
+                        <button type="submit" id="change-password-submit-btn" class="btn-gold">保存新密码</button>
+                        <button type="button" id="cancel-change-password-btn" class="btn-ghost">返回</button>
                     </div>
                 </form>
             </div>

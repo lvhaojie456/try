@@ -689,6 +689,16 @@ body, html {
     display: flex; flex-direction: column;
     gap: 3px;
 }
+.user-panel-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.user-panel-actions .btn-ghost {
+    padding: 8px 12px;
+    font-size: 12px;
+}
 .user-label {
     color: #9ca3af;
     font-size: 11px;
@@ -935,6 +945,10 @@ body, html {
         flex-direction: column;
         align-items: stretch;
         text-align: center;
+    }
+    .user-panel-actions {
+        flex-direction: row;
+        justify-content: center;
     }
     .leaderboard-row {
         grid-template-columns: 38px 1fr auto;
