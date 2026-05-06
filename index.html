@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>奥术征途 - 肉鸽卡组构筑</title>
+    <meta name="description" content="一款具有 13 张独特卡牌、状态效果和 Boss 战的深度肉鸽卡组构筑游戏。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- 主菜单 -->
+        <div id="main-menu" class="overlay">
+            <div class="overlay-content menu-content">
+                <h1>🏰 奥术征途</h1>
+                <p class="menu-subtitle">肉鸽卡组构筑</p>
+                <div id="user-panel" class="user-panel">
+                    <div class="user-panel-copy">
+                        <span class="user-label">当前玩家</span>
+                        <strong id="current-username">游客</strong>
+                        <small id="current-user-best">未记录关卡</small>
+                    </div>
+                    <button id="register-open-btn" class="btn-ghost">注册</button>
+                </div>
+                <div class="menu-buttons">
+                    <button id="new-game-btn" class="btn-gold big-btn menu-btn">⚔️ 开始新游戏</button>
+                    <button id="load-game-btn" class="btn-gold big-btn menu-btn" disabled>📂 继续存档</button>
+                    <button id="leaderboard-btn" class="btn-gold big-btn menu-btn">🏆 关卡排行榜</button>
+                    <button id="card-guide-btn" class="btn-gold big-btn menu-btn">📖 卡牌图鉴</button>
+                    <button id="sound-toggle-btn" class="btn-ghost menu-btn sound-btn">🔊 音效：开</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 卡牌图鉴 -->
+        <div id="card-guide-screen" class="overlay hidden">
+            <div class="overlay-content guide-content">
+                <h2>📖 卡牌图鉴</h2>
+                <div class="guide-tabs">
+                    <button class="guide-tab active" data-tab="cards">卡牌一览</button>
+                    <button class="guide-tab" data-tab="status">状态效果</button>
+                </div>
+                <div id="guide-body" class="guide-body"></div>
+                <button id="close-guide-btn" class="btn-gold">返回</button>
+            </div>
+        </div>
+
+        <!-- 抽牌堆查看 -->
+        <div id="pile-view-screen" class="overlay hidden">
+            <div class="overlay-content guide-content">
+                <h2 id="pile-view-title">📚 抽牌堆</h2>
+                <p id="pile-view-subtitle" class="reward-subtitle">当前还未抽到的卡牌</p>
+                <div id="pile-view-body" class="guide-body"></div>
+                <button id="close-pile-view-btn" class="btn-gold">返回</button>
+            </div>
+        </div>
+
+        <!-- 用户注册 -->
+        <div id="register-screen" class="overlay hidden">
+            <div class="overlay-content auth-content">
+                <h2>注册玩家</h2>
+                <form id="register-form" class="auth-form">
+                    <label for="username-input">玩家名</label>
+                    <input id="username-input" type="text" maxlength="16" autocomplete="username" placeholder="输入 2-16 位名字">
+                    <p id="register-message" class="form-message"></p>
+                    <div class="dialog-actions">
+                        <button type="submit" id="register-submit-btn" class="btn-gold">创建玩家</button>
+                        <button type="button" id="cancel-register-btn" class="btn-ghost">返回</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 排行榜 -->
+        <div id="leaderboard-screen" class="overlay hidden">
+            <div class="overlay-content leaderboard-content">
+                <h2>🏆 关卡排行榜</h2>
+                <div id="leaderboard-list" class="leaderboard-list"></div>
+                <p id="leaderboard-message" class="form-message"></p>
+                <div class="dialog-actions">
+                    <button id="refresh-leaderboard-btn" class="btn-gold">刷新</button>
+                    <button id="close-leaderboard-btn" class="btn-ghost">返回</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 战斗场景 -->
+        <div id="battle-scene">
+            <!-- Player Area (Left) -->
+            <div id="player-area" class="character-area">
+                <img src="hero.png" id="player-sprite" alt="英雄">
+                <div class="health-bar-container">
+                    <div id="player-health-bar" class="health-bar"></div>
+                    <span id="player-health-text" class="health-text">60/60</span>
+                </div>
+                <div id="player-status" class="status-effects"></div>
+            </div>
+
+            <!-- Enemy Area (Right) -->
+            <div id="enemy-area" class="character-area">
+                <div id="enemy-name" class="enemy-name-tag">敌人</div>
+                <div id="enemy-intent" class="intent-box">
+                    <span class="intent-icon">⚔️</span>
+                    <span class="intent-value" id="enemy-intent-value">0</span>
+                </div>
+                <img src="enemy_boss.png" id="enemy-sprite" alt="首领">
+                <div class="health-bar-container">
+                    <div id="enemy-health-bar" class="health-bar enemy-bar"></div>
+                    <span id="enemy-health-text" class="health-text">40/40</span>
+                </div>
+                <div id="enemy-status" class="status-effects"></div>
+            </div>
+
+            <div id="damage-numbers-container"></div>
+        </div>
+
+        <!-- 底部面板 -->
+        <div id="bottom-panel">
+            <div id="energy-orb">
+                <span id="current-energy">3</span>/<span id="max-energy">3</span>
+            </div>
+
+            <div id="deck-pile" class="pile" title="抽牌堆">
+                📚 <span id="deck-count">9</span>
+            </div>
+
+            <div id="hand-container">
+                <!-- 卡牌注入此处 -->
+            </div>
+
+            <div id="discard-pile" class="pile" title="弃牌堆">
+                🗑️ <span id="discard-count">0</span>
+            </div>
+
+            <button id="end-turn-btn">结束回合</button>
+            <button id="save-game-btn">💾 保存游戏</button>
+            <button id="save-quit-btn">💾 存档退出</button>
+            <div id="save-toast" class="save-toast hidden">已保存</div>
+        </div>
+
+        <!-- 覆盖层 -->
+        <div id="reward-screen" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>⚔️ 胜利！</h2>
+                <p class="reward-subtitle">选择一张卡牌加入你的牌组：</p>
+                <div id="reward-cards" class="card-selection-container"></div>
+                <button id="skip-reward-btn" class="btn-gold">跳过奖励</button>
+            </div>
+        </div>
+
+        <div id="upgrade-screen" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>⬆️ 卡牌升级！</h2>
+                <p class="reward-subtitle">击败 Boss！选择一张卡牌进行强化：</p>
+                <div id="upgrade-cards" class="card-selection-container"></div>
+                <button id="skip-upgrade-btn" class="btn-gold">跳过升级</button>
+            </div>
+        </div>
+
+        <div id="boss-choice-screen" class="overlay hidden">
+            <div class="overlay-content boss-choice-content">
+                <h2>👑 Boss 奖励</h2>
+                <p class="reward-subtitle">选择一种牌组调整。升级牌会在之后单独进行。</p>
+                <div class="boss-choice-actions">
+                    <button id="boss-add-card-btn" class="btn-gold big-btn">获得一张牌</button>
+                    <button id="boss-remove-card-btn" class="btn-ghost big-btn">删除一张牌</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="remove-card-screen" class="overlay hidden">
+            <div class="overlay-content guide-content">
+                <h2>🗑️ 删除卡牌</h2>
+                <p class="reward-subtitle">选择一张牌从牌组中移除。</p>
+                <div id="remove-cards" class="guide-body"></div>
+                <button id="skip-remove-btn" class="btn-gold">跳过删除</button>
+            </div>
+        </div>
+
+        <div id="game-over-screen" class="overlay hidden">
+            <div class="overlay-content">
+                <h1 id="game-over-title">💀 失败</h1>
+                <p>你到达了第 <span id="final-floor">1</span> 层</p>
+                <div class="dialog-actions game-over-actions">
+                    <button id="load-death-save-btn" class="btn-gold big-btn">读取存档</button>
+                    <button id="restart-btn" class="btn-ghost big-btn">返回主菜单</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tutorial-screen" class="overlay hidden">
+            <div class="overlay-content tutorial-content">
+                <h1>🏰 奥术征途</h1>
+                <p class="tutorial-subtitle">掌控卡牌，征服地牢</p>
+                <div class="tutorial-grid">
+                    <div class="tutorial-item">
+                        <span class="tutorial-icon">🃏</span>
+                        <div><b>出牌</b><br>点击卡牌即可出牌。每张牌消耗能量（蓝色球）。</div>
+                    </div>
+                    <div class="tutorial-item">
+                        <span class="tutorial-icon">⚔️</span>
+                        <div><b>敌人意图</b><br>观察敌人上方的图标来预测他们的下一步行动。</div>
+                    </div>
+                    <div class="tutorial-item">
+                        <span class="tutorial-icon">☠️</span>
+                        <div><b>中毒</b><br>每回合造成伤害，且数值每回合减少 1。</div>
+                    </div>
+                    <div class="tutorial-item">
+                        <span class="tutorial-icon">😵</span>
+                        <div><b>虚弱</b><br>降低目标 25% 的攻击力。</div>
+                    </div>
+                    <div class="tutorial-item">
+                        <span class="tutorial-icon">⚡</span>
+                        <div><b>能力卡</b><br>永久效果！打出后从本场战斗牌组中移除。</div>
+                    </div>
+                    <div class="tutorial-item">
+                        <span class="tutorial-icon">💀</span>
+                        <div><b>诅咒卡</b><br>无法打出的卡牌，会占用你的手牌空间。小心！</div>
+                    </div>
+                </div>
+                <button id="close-tutorial-btn" class="btn-gold big-btn">开始征途！</button>
+            </div>
+        </div>
+
+        <div id="floor-banner" class="hidden">
+            <h1 id="floor-title">第 1 层</h1>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

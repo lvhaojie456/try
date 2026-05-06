@@ -1,0 +1,8 @@
+name = "arcane-quest"
+compatibility_date = "2026-05-06"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "arcane-quest-db"
+database_id = "5d9693be-ee37-4264-939d-f92875f7d670"

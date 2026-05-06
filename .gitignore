@@ -1,0 +1,15 @@
+.wrangler/
+.env
+.env.*
+!.env.example
+
+node_modules/
+dist/
+build/
+.cache/
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+*.log
