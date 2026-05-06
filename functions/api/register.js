@@ -67,15 +67,17 @@ export async function onRequestPost({ request, env }) {
 
     try {
         await env.DB.prepare(
-            `INSERT INTO users (id, username, best_floor, password_salt, password_hash, created_at, updated_at)
-             VALUES (?, ?, 1, ?, ?, ?, ?)`
+            `INSERT INTO users (id, username, best_floor, best_floor_easy, best_floor_hard, password_salt, password_hash, created_at, updated_at)
+             VALUES (?, ?, 1, 1, 1, ?, ?, ?, ?)`
         ).bind(id, username, passwordSalt, passwordHash, now, now).run();
 
         return json({
             user: {
                 id,
                 username,
-                bestFloor: 1
+                bestFloor: 1,
+                bestFloorEasy: 1,
+                bestFloorHard: 1
             }
         }, 201);
     } catch(e) {

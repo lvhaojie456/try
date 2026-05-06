@@ -16,6 +16,7 @@ const enemyIntentBox = document.getElementById('enemy-intent');
 const enemyNameEl = document.getElementById('enemy-name');
 const currentEnergyEl = document.getElementById('current-energy');
 const maxEnergyEl = document.getElementById('max-energy');
+const goldCountEl = document.getElementById('gold-count');
 const deckPile = document.getElementById('deck-pile');
 const deckCountEl = document.getElementById('deck-count');
 const discardCountEl = document.getElementById('discard-count');
@@ -37,6 +38,10 @@ const closeTutorialBtn = document.getElementById('close-tutorial-btn');
 const upgradeScreen = document.getElementById('upgrade-screen');
 const upgradeCardsContainer = document.getElementById('upgrade-cards');
 const skipUpgradeBtn = document.getElementById('skip-upgrade-btn');
+const shopScreen = document.getElementById('shop-screen');
+const shopCardsContainer = document.getElementById('shop-cards');
+const shopGoldEl = document.getElementById('shop-gold');
+const leaveShopBtn = document.getElementById('leave-shop-btn');
 const mainMenu = document.getElementById('main-menu');
 const newGameBtn = document.getElementById('new-game-btn');
 const loadGameBtn = document.getElementById('load-game-btn');
@@ -77,6 +82,8 @@ const leaderboardList = document.getElementById('leaderboard-list');
 const leaderboardMessage = document.getElementById('leaderboard-message');
 const refreshLeaderboardBtn = document.getElementById('refresh-leaderboard-btn');
 const closeLeaderboardBtn = document.getElementById('close-leaderboard-btn');
+const modeChoiceButtons = Array.from(document.querySelectorAll('[data-mode-choice]'));
+const leaderboardModeButtons = Array.from(document.querySelectorAll('[data-leaderboard-mode]'));
 const soundToggleBtn = document.getElementById('sound-toggle-btn');
 const bossChoiceScreen = document.getElementById('boss-choice-screen');
 const bossAddCardBtn = document.getElementById('boss-add-card-btn');
@@ -101,11 +108,18 @@ const CARDS = {
     dodge:         { id:'dodge',         name:'翻滚躲避',     cost:1, type:'skill',  block:5, draw:1, desc:'获得 5 点格挡。抽 1 张牌。' },
     battlecry:     { id:'battlecry',     name:'战斗呐喊',     cost:1, type:'power',  strGain:3, desc:'力量 +3。（能力卡）' },
     flamaura:      { id:'flamaura',      name:'火焰光环',     cost:2, type:'power',  aura:4, desc:'每回合造成 4 点伤害。（能力卡）' },
+    arcane_missile:{ id:'arcane_missile',name:'奥术飞弹',     cost:1, type:'attack', dmg:4,  hits:3, shopOnly:true, price:45, desc:'造成 4 点伤害 3 次。' },
+    frost_seal:    { id:'frost_seal',    name:'霜纹封印',     cost:1, type:'skill',  block:7, applyWeak:1, shopOnly:true, price:40, desc:'获得 7 点格挡。施加 1 层虚弱。' },
+    phoenix_feather:{id:'phoenix_feather',name:'凤凰羽',       cost:1, type:'skill',  healAmt:8, draw:1, shopOnly:true, price:50, desc:'回复 8 点生命。抽 1 张牌。' },
+    golden_slash:  { id:'golden_slash',  name:'鎏金斩',       cost:0, type:'attack', dmg:5,  shopOnly:true, price:55, desc:'造成 5 点伤害。' },
+    dragon_spark:  { id:'dragon_spark',  name:'龙息火花',     cost:2, type:'attack', dmg:10, poison:3, shopOnly:true, price:65, desc:'造成 10 点伤害。施加 3 层中毒。' },
+    guardian_oath: { id:'guardian_oath', name:'守护誓约',     cost:2, type:'power',  strGain:1, aura:2, shopOnly:true, price:70, desc:'力量 +1。每回合造成 2 点伤害。' },
     wound:         { id:'wound',         name:'受伤',         cost:99,type:'curse',  desc:'无法打出。占用手牌。' },
 };
 
 // Reward pool (excludes starter cards and curses)
 const REWARD_POOL = ['fireball','poison_dagger','thunder','vampire','weaken','heal','dodge','battlecry','flamaura'];
+const SHOP_CARD_POOL = ['arcane_missile','frost_seal','phoenix_feather','golden_slash','dragon_spark','guardian_oath'];
 
 // ============================================================
 // CARD UPGRADES — Stats applied when a card is upgraded
@@ -123,6 +137,12 @@ const CARD_UPGRADES = {
     dodge:         { name:'翻滚躲避+',   block:8, draw:2,   desc:'获得 8 点格挡。抽 2 张牌。' },
     battlecry:     { name:'战斗呐喊+',   strGain:5,         desc:'力量 +5。（能力卡）' },
     flamaura:      { name:'火焰光环+',   aura:7,            desc:'每回合造成 7 点伤害。（能力卡）' },
+    arcane_missile:{ name:'奥术飞弹+',   dmg:5,             desc:'造成 5 点伤害 3 次。' },
+    frost_seal:    { name:'霜纹封印+',   block:10, applyWeak:2, desc:'获得 10 点格挡。施加 2 层虚弱。' },
+    phoenix_feather:{name:'凤凰羽+',     healAmt:12, draw:2, desc:'回复 12 点生命。抽 2 张牌。' },
+    golden_slash:  { name:'鎏金斩+',     dmg:8,             desc:'造成 8 点伤害。' },
+    dragon_spark:  { name:'龙息火花+',   dmg:14, poison:4,  desc:'造成 14 点伤害。施加 4 层中毒。' },
+    guardian_oath: { name:'守护誓约+',   strGain:2, aura:3, desc:'力量 +2。每回合造成 3 点伤害。' },
 };
 
 // ============================================================
@@ -141,6 +161,73 @@ const ENEMIES = [
 // ============================================================
 let G = null; // global game state
 let recentlyDrawnUids = [];
+
+const GAME_MODE_KEY = 'arcane_quest_game_mode';
+const GAME_MODE_IDS = ['easy', 'hard'];
+const DEFAULT_GAME_MODE = 'easy';
+const LEGACY_GAME_MODE = 'hard';
+const GAME_MODES = {
+    easy: {
+        id: 'easy',
+        label: '简单模式',
+        shortLabel: '简单',
+        playerMaxHp: 90,
+        enemyHpMultiplier: 0.82,
+        enemyPowerMultiplier: 0.8,
+        floorHeal: 16,
+        bossHeal: 32,
+        goldDrop: [14, 22],
+        bossGoldDrop: [45, 65]
+    },
+    hard: {
+        id: 'hard',
+        label: '困难模式',
+        shortLabel: '困难',
+        playerMaxHp: 80,
+        enemyHpMultiplier: 1,
+        enemyPowerMultiplier: 1,
+        floorHeal: 12,
+        bossHeal: 25,
+        goldDrop: [10, 18],
+        bossGoldDrop: [35, 55]
+    }
+};
+let selectedMode = normalizeGameMode(localStorage.getItem(GAME_MODE_KEY) || DEFAULT_GAME_MODE);
+let leaderboardMode = selectedMode;
+
+function normalizeGameMode(mode, fallback = DEFAULT_GAME_MODE) {
+    const value = String(mode || '').trim().toLowerCase();
+    return GAME_MODE_IDS.includes(value) ? value : fallback;
+}
+
+function getGameModeConfig(mode = selectedMode) {
+    return GAME_MODES[normalizeGameMode(mode)] || GAME_MODES[DEFAULT_GAME_MODE];
+}
+
+function getActiveGameMode() {
+    return normalizeGameMode(G?.mode || selectedMode);
+}
+
+function setSelectedMode(mode, persist = true) {
+    selectedMode = normalizeGameMode(mode);
+    leaderboardMode = normalizeGameMode(leaderboardMode || selectedMode);
+    if (persist) localStorage.setItem(GAME_MODE_KEY, selectedMode);
+    updateModeButtons();
+    updateUserPanel();
+}
+
+function updateModeButtons() {
+    modeChoiceButtons.forEach(button => {
+        const mode = normalizeGameMode(button.dataset.modeChoice);
+        button.classList.toggle('active', mode === selectedMode);
+        button.setAttribute('aria-pressed', mode === selectedMode ? 'true' : 'false');
+    });
+    leaderboardModeButtons.forEach(button => {
+        const mode = normalizeGameMode(button.dataset.leaderboardMode);
+        button.classList.toggle('active', mode === leaderboardMode);
+        button.setAttribute('aria-pressed', mode === leaderboardMode ? 'true' : 'false');
+    });
+}
 
 // ============================================================
 // AUDIO
@@ -210,13 +297,19 @@ function toggleSound() {
 
 document.addEventListener('pointerdown', unlockAudio, { once: true });
 
-function newGame() {
+function newGame(mode = selectedMode) {
+    const normalizedMode = normalizeGameMode(mode);
+    const modeConfig = getGameModeConfig(normalizedMode);
+    setSelectedMode(normalizedMode);
     G = {
+        mode: normalizedMode,
         floor: 1,
+        gold: 0,
+        shopOfferedFloor: 0,
         played: 0,       // cards played this turn
         acting: false,    // lock during animations
         player: {
-            hp: 80, maxHp: 80,
+            hp: modeConfig.playerMaxHp, maxHp: modeConfig.playerMaxHp,
             block: 0, energy: 3, maxEnergy: 3,
             str: 0, flameAura: 0,
             deck: [], hand: [], discard: [], exhaust: []
@@ -239,6 +332,21 @@ function makeCard(id) {
     return { ...CARDS[id], uid: Math.random() };
 }
 
+function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function awardGold(wasBoss) {
+    if (!G) return 0;
+    const modeConfig = getGameModeConfig(G.mode);
+    const [min, max] = wasBoss ? modeConfig.bossGoldDrop : modeConfig.goldDrop;
+    const amount = randomInt(min, max);
+    G.gold = Math.max(0, Number(G.gold || 0)) + amount;
+    floatText(`+${amount} 金币`, playerSprite, 'gold-text');
+    updateUI();
+    return amount;
+}
+
 // ============================================================
 // FLOOR & TURN MANAGEMENT
 // ============================================================
@@ -252,12 +360,14 @@ function startFloor() {
 
     const templateIndex = Math.min(ei, ENEMIES.length - 1);
     const tmpl = ENEMIES[templateIndex];
-    const scale = 1 + (G.floor - 1) * 0.1;
+    G.mode = normalizeGameMode(G.mode, LEGACY_GAME_MODE);
+    const modeConfig = getGameModeConfig(G.mode);
+    const scale = (1 + (G.floor - 1) * 0.1) * modeConfig.enemyHpMultiplier;
 
     G.enemy.template = tmpl;
     G.enemy.templateIndex = templateIndex;
     G.enemy.name = tmpl.name;
-    G.enemy.maxHp = Math.floor(tmpl.hp * scale);
+    G.enemy.maxHp = Math.max(1, Math.floor(tmpl.hp * scale));
     G.enemy.hp = G.enemy.maxHp;
     G.enemy.block = 0;
     G.enemy.str = Math.floor((G.floor - 1) / 4);
@@ -548,15 +658,16 @@ function decideIntent() {
     const raw = tmpl.patterns[G.enemy.pi % tmpl.patterns.length];
     G.enemy.pi++;
 
-    const scale = 1 + (G.floor - 1) * 0.07;
+    const modeConfig = getGameModeConfig(G.mode);
+    const scale = (1 + (G.floor - 1) * 0.07) * modeConfig.enemyPowerMultiplier;
     let action, value;
 
     if (raw.startsWith('atk:')) {
         action = 'attack';
-        value = Math.floor(parseInt(raw.split(':')[1]) * scale);
+        value = Math.max(1, Math.floor(parseInt(raw.split(':')[1]) * scale));
     } else if (raw.startsWith('def:')) {
         action = 'defend';
-        value = Math.floor(parseInt(raw.split(':')[1]) * scale);
+        value = Math.max(1, Math.floor(parseInt(raw.split(':')[1]) * scale));
     } else if (raw === 'buff') {
         action = 'buff'; value = 2;
     } else if (raw === 'debuff') {
@@ -633,12 +744,14 @@ function winFloor() {
 
     // Boss kill bonus: +5 max HP and purge all wounds
     const wasBoss = G.floor % 5 === 0;
+    awardGold(wasBoss);
     G.pendingUpgrade = wasBoss;
     G.floor++;
     recordFloorProgress(G.floor);
 
     // Heal between floors (more after boss)
-    const healAmt = wasBoss ? 25 : 12;
+    const modeConfig = getGameModeConfig(G.mode);
+    const healAmt = wasBoss ? modeConfig.bossHeal : modeConfig.floorHeal;
     G.player.hp = Math.min(G.player.maxHp, G.player.hp + healAmt);
 
     if (wasBoss) {
@@ -692,7 +805,77 @@ skipRewardBtn.onclick = () => {
 };
 
 function afterReward() {
-    startFloor();
+    afterPostCombatRewards();
+}
+
+let currentShopOffers = [];
+let currentShopDone = null;
+
+function shouldOfferShop() {
+    if (!G) return false;
+    if (G.shopOfferedFloor === G.floor) return false;
+    return G.floor > 1 && (G.floor % 3 === 0 || (G.floor - 1) % 5 === 0);
+}
+
+function afterPostCombatRewards() {
+    if (shouldOfferShop()) {
+        showShopScreen(startFloor);
+    } else {
+        startFloor();
+    }
+}
+
+function showShopScreen(onDone = startFloor) {
+    if (!shopScreen || !shopCardsContainer) {
+        onDone();
+        return;
+    }
+    G.shopOfferedFloor = G.floor;
+    currentShopDone = onDone;
+    const pool = [...SHOP_CARD_POOL];
+    shuffle(pool);
+    currentShopOffers = pool.slice(0, 3).map(id => ({ id, sold: false }));
+    renderShopOffers();
+    shopScreen.classList.remove('hidden');
+}
+
+function renderShopOffers() {
+    if (!shopCardsContainer) return;
+    shopCardsContainer.innerHTML = '';
+    if (shopGoldEl) shopGoldEl.textContent = `金币：${Math.max(0, Number(G?.gold || 0))}`;
+
+    currentShopOffers.forEach((offer, index) => {
+        const cardData = CARDS[offer.id];
+        const price = cardData.price || 50;
+        const wrap = document.createElement('div');
+        wrap.className = 'shop-offer';
+
+        const cardEl = buildCardEl(makeCard(offer.id), false);
+        const buyBtn = document.createElement('button');
+        buyBtn.className = 'btn-gold shop-buy-btn';
+        buyBtn.disabled = offer.sold || (G.gold || 0) < price;
+        buyBtn.textContent = offer.sold ? '已购买' : `购买 ${price}`;
+        buyBtn.onclick = () => buyShopCard(index);
+
+        wrap.append(cardEl, buyBtn);
+        shopCardsContainer.appendChild(wrap);
+    });
+}
+
+function buyShopCard(index) {
+    const offer = currentShopOffers[index];
+    if (!offer || offer.sold) return;
+    const cardData = CARDS[offer.id];
+    const price = cardData.price || 50;
+    if ((G.gold || 0) < price) {
+        if (shopGoldEl) shopGoldEl.textContent = `金币不足：${Math.max(0, Number(G.gold || 0))}`;
+        return;
+    }
+    G.gold -= price;
+    offer.sold = true;
+    G.player.deck.push(makeCard(offer.id));
+    renderShopOffers();
+    updateUI();
 }
 
 function showBossChoiceScreen() {
@@ -705,7 +888,7 @@ function afterBossDeckChoice() {
         showUpgradeScreen();
         return;
     }
-    startFloor();
+    afterPostCombatRewards();
 }
 
 function getAllPlayerCardsWithPiles() {
@@ -757,7 +940,7 @@ function showUpgradeScreen() {
     const upgradeable = allCards.filter(c => !c.upgraded && c.type !== 'curse' && CARD_UPGRADES[c.id]);
 
     if (upgradeable.length === 0) {
-        startFloor();
+        afterPostCombatRewards();
         return;
     }
 
@@ -775,7 +958,7 @@ function showUpgradeScreen() {
             Object.assign(card, CARD_UPGRADES[card.id]);
             card.upgraded = true;
             upgradeScreen.classList.add('hidden');
-            startFloor();
+            afterPostCombatRewards();
         };
         upgradeCardsContainer.appendChild(el);
     });
@@ -785,7 +968,7 @@ function showUpgradeScreen() {
 
 skipUpgradeBtn.onclick = () => {
     upgradeScreen.classList.add('hidden');
-    startFloor();
+    afterPostCombatRewards();
 };
 
 function loseGame() {
@@ -844,8 +1027,11 @@ function createSaveData() {
     const e = G.enemy;
     return {
         version: 2,
+        mode: getActiveGameMode(),
         savedAt: new Date().toISOString(),
         floor: G.floor,
+        gold: Math.max(0, Number(G.gold || 0)),
+        shopOfferedFloor: Math.max(0, Number(G.shopOfferedFloor || 0)),
         played: G.played || 0,
         pendingUpgrade: !!G.pendingUpgrade,
         player: {
@@ -889,7 +1075,10 @@ function loadSnapshotSave(save) {
     const templateIndex = Math.max(0, Math.min(rawTemplateIndex, ENEMIES.length - 1));
     const tmpl = ENEMIES[templateIndex];
     G = {
+        mode: normalizeGameMode(save.mode, LEGACY_GAME_MODE),
         floor: toFloorNumber(save.floor, 1),
+        gold: Math.max(0, Number(save.gold || 0)),
+        shopOfferedFloor: Math.max(0, Number(save.shopOfferedFloor || 0)),
         played: Math.max(0, Number(save.played || 0)),
         acting: false,
         pendingUpgrade: !!save.pendingUpgrade,
@@ -921,12 +1110,16 @@ function loadSnapshotSave(save) {
             isDead: !!save.enemy?.isDead
         }
     };
+    setSelectedMode(G.mode);
     return 'snapshot';
 }
 
 function loadLegacySave(save) {
     G = {
+        mode: LEGACY_GAME_MODE,
         floor: toFloorNumber(save.floor, 1),
+        gold: Math.max(0, Number(save.gold || 0)),
+        shopOfferedFloor: 0,
         played: 0,
         acting: false,
         player: {
@@ -944,6 +1137,7 @@ function loadLegacySave(save) {
         }
     };
     G.player.deck = cardsFromSave(save.cards);
+    setSelectedMode(G.mode);
     return 'legacy';
 }
 
@@ -991,6 +1185,7 @@ function resumeSavedGame() {
     gameOverScreen.classList.add('hidden');
     rewardScreen.classList.add('hidden');
     upgradeScreen.classList.add('hidden');
+    shopScreen.classList.add('hidden');
     bossChoiceScreen.classList.add('hidden');
     removeCardScreen.classList.add('hidden');
     pileViewScreen.classList.add('hidden');
@@ -1095,12 +1290,30 @@ function toFloorNumber(value, fallback = 1) {
     return Number.isFinite(floor) && floor > 0 ? floor : fallback;
 }
 
+function normalizeBestFloors(data = {}) {
+    const nested = data.bestFloors || data.best_floors || {};
+    const legacyBest = toFloorNumber(data.bestFloor || data.best_floor, 1);
+    return {
+        easy: toFloorNumber(data.bestFloorEasy || data.best_floor_easy || nested.easy, 1),
+        hard: toFloorNumber(data.bestFloorHard || data.best_floor_hard || nested.hard, legacyBest)
+    };
+}
+
+function getUserBestFloor(user, mode = selectedMode) {
+    if (!user) return 1;
+    const normalizedMode = normalizeGameMode(mode);
+    if (user.bestFloors) return toFloorNumber(user.bestFloors[normalizedMode], 1);
+    return toFloorNumber(user.bestFloor || user.best_floor, 1);
+}
+
 function normalizeUser(user) {
     if (!user || !user.id || !user.username) return null;
+    const bestFloors = normalizeBestFloors(user);
     return {
         id: String(user.id),
         username: String(user.username),
-        bestFloor: toFloorNumber(user.bestFloor || user.best_floor, 1),
+        bestFloor: bestFloors[selectedMode],
+        bestFloors,
         source: user.source || 'cloud'
     };
 }
@@ -1147,16 +1360,19 @@ async function registerLocalUser(username, password, reachedFloor) {
     const users = getLocalUsers();
     if (users[username]) throw apiError('这个账号已被占用。', 409);
     const passwordRecord = await makeLocalPasswordRecord(password);
+    const mode = getActiveGameMode();
+    const bestFloors = { easy: 1, hard: 1, [mode]: reachedFloor };
     const user = {
         id: makeLocalUserId(),
         username,
         bestFloor: reachedFloor,
+        bestFloors,
         source: 'local',
         ...passwordRecord
     };
     users[username] = user;
     saveLocalUsers(users);
-    updateLocalLeaderboard(user, reachedFloor);
+    updateLocalLeaderboard(user, reachedFloor, mode);
     return normalizeUser(user);
 }
 
@@ -1195,52 +1411,80 @@ async function apiRequest(path, options = {}) {
     return data;
 }
 
-function getLocalLeaderboard() {
-    const entries = readJson(LOCAL_LEADERBOARD_KEY, []);
-    return Array.isArray(entries) ? entries.map(normalizeLeaderboardEntry).filter(Boolean) : [];
-}
-
-function saveLocalLeaderboard(entries) {
-    writeJson(LOCAL_LEADERBOARD_KEY, entries.slice(0, 20));
-}
-
 function normalizeLeaderboardEntry(entry) {
     if (!entry) return null;
     const id = entry.id || entry.userId || entry.user_id || '';
     const username = entry.username || entry.name || '';
     const bestFloor = toFloorNumber(entry.bestFloor || entry.best_floor || entry.floor, 0);
+    const mode = normalizeGameMode(entry.mode, LEGACY_GAME_MODE);
     if (!username || bestFloor < 1) return null;
     return {
         id: String(id),
         username: String(username),
         bestFloor,
+        mode,
         updatedAt: entry.updatedAt || entry.updated_at || ''
     };
 }
 
-function updateLocalLeaderboard(user, floor) {
+function getLocalLeaderboard(mode = leaderboardMode) {
+    const normalizedMode = normalizeGameMode(mode);
+    const entries = readJson(LOCAL_LEADERBOARD_KEY, []);
+    if (!Array.isArray(entries)) return [];
+    return entries
+        .map(normalizeLeaderboardEntry)
+        .filter(entry => entry && entry.mode === normalizedMode);
+}
+
+function saveLocalLeaderboard(entries) {
+    writeJson(LOCAL_LEADERBOARD_KEY, entries.slice(0, 40));
+}
+
+function updateLocalLeaderboard(user, floor, mode = getActiveGameMode()) {
     if (!user) return;
     const bestFloor = toFloorNumber(floor, 1);
+    const normalizedMode = normalizeGameMode(mode);
     const now = new Date().toISOString();
-    const entries = getLocalLeaderboard();
-    const existing = entries.find(entry => entry.id === user.id || entry.username === user.username);
+    const rawEntries = readJson(LOCAL_LEADERBOARD_KEY, []);
+    const entries = Array.isArray(rawEntries) ? rawEntries.map(normalizeLeaderboardEntry).filter(Boolean) : [];
+    const existing = entries.find(entry =>
+        entry.mode === normalizedMode && (entry.id === user.id || entry.username === user.username)
+    );
     if (existing) {
         existing.id = user.id;
         existing.username = user.username;
+        existing.mode = normalizedMode;
         existing.bestFloor = Math.max(existing.bestFloor, bestFloor);
         existing.updatedAt = now;
     } else {
-        entries.push({ id: user.id, username: user.username, bestFloor, updatedAt: now });
+        entries.push({ id: user.id, username: user.username, mode: normalizedMode, bestFloor, updatedAt: now });
     }
-    entries.sort((a, b) => b.bestFloor - a.bestFloor || a.username.localeCompare(b.username, 'zh-Hans-CN'));
+    entries.sort((a, b) =>
+        a.mode.localeCompare(b.mode) ||
+        b.bestFloor - a.bestFloor ||
+        a.username.localeCompare(b.username, 'zh-Hans-CN')
+    );
     saveLocalLeaderboard(entries);
+}
+
+function saveLocalUserProgress(user) {
+    if (!user || user.source !== 'local') return;
+    const users = getLocalUsers();
+    const local = users[user.username];
+    if (!local) return;
+    local.bestFloors = normalizeBestFloors(user);
+    local.bestFloor = Math.max(local.bestFloors.easy, local.bestFloors.hard);
+    users[user.username] = local;
+    saveLocalUsers(users);
 }
 
 function updateUserPanel() {
     const user = currentUser;
     if (!currentUsernameEl || !currentUserBestEl || !registerOpenBtn) return;
+    const modeConfig = getGameModeConfig(selectedMode);
+    const bestFloor = user ? getUserBestFloor(user, selectedMode) : 1;
     currentUsernameEl.textContent = user ? user.username : '游客';
-    currentUserBestEl.textContent = user ? `最高到达第 ${user.bestFloor} 层` : '未记录关卡';
+    currentUserBestEl.textContent = user ? `${modeConfig.shortLabel}最高第 ${bestFloor} 层` : '未记录关卡';
     registerOpenBtn.textContent = user ? '切换账号' : '登录/注册';
     if (changePasswordOpenBtn) changePasswordOpenBtn.classList.toggle('hidden', !user);
 }
@@ -1312,10 +1556,12 @@ async function handleRegisterSubmit(event) {
             id: data.user.id,
             username: data.user.username,
             bestFloor: Math.max(reachedFloor, data.user.bestFloor || data.user.best_floor || 1),
+            bestFloorEasy: data.user.bestFloorEasy || data.user.best_floor_easy,
+            bestFloorHard: data.user.bestFloorHard || data.user.best_floor_hard,
             source: 'cloud'
         });
         saveUserProfile(user);
-        recordFloorProgress(user.bestFloor);
+        recordFloorProgress(Math.max(reachedFloor, getUserBestFloor(user, getActiveGameMode())));
         setRegisterMessage('注册成功。', 'success');
         setTimeout(closeRegisterScreen, 500);
     } catch(e) {
@@ -1360,6 +1606,8 @@ async function handleLoginSubmit() {
             id: data.user.id,
             username: data.user.username,
             bestFloor: data.user.bestFloor || data.user.best_floor || 1,
+            bestFloorEasy: data.user.bestFloorEasy || data.user.best_floor_easy,
+            bestFloorHard: data.user.bestFloorHard || data.user.best_floor_hard,
             source: 'cloud'
         }));
         setRegisterMessage('登录成功。', 'success');
@@ -1420,10 +1668,11 @@ async function handleChangePasswordSubmit(event) {
 
 function renderLeaderboard(entries, source) {
     leaderboardList.innerHTML = '';
+    const modeConfig = getGameModeConfig(leaderboardMode);
     if (!entries.length) {
         const empty = document.createElement('div');
         empty.className = 'leaderboard-empty';
-        empty.textContent = '暂无排行记录';
+        empty.textContent = `${modeConfig.label}暂无排行记录`;
         leaderboardList.appendChild(empty);
         leaderboardMessage.textContent = '';
         return;
@@ -1450,23 +1699,25 @@ function renderLeaderboard(entries, source) {
         leaderboardList.appendChild(row);
     });
 
-    leaderboardMessage.textContent = source === 'local' ? '本地榜单' : '云端榜单';
+    leaderboardMessage.textContent = `${modeConfig.label} · ${source === 'local' ? '本地榜单' : '云端榜单'}`;
 }
 
 async function refreshLeaderboard() {
     leaderboardList.innerHTML = '<div class="leaderboard-empty">读取中...</div>';
     leaderboardMessage.textContent = '';
     try {
-        const data = await apiRequest('/api/leaderboard');
+        const data = await apiRequest(`/api/leaderboard?mode=${encodeURIComponent(leaderboardMode)}`);
         const entries = (data.entries || []).map(normalizeLeaderboardEntry).filter(Boolean);
         renderLeaderboard(entries, 'cloud');
     } catch(e) {
-        renderLeaderboard(getLocalLeaderboard(), 'local');
+        renderLeaderboard(getLocalLeaderboard(leaderboardMode), 'local');
     }
 }
 
 function showLeaderboardScreen() {
     mainMenu.classList.add('hidden');
+    leaderboardMode = selectedMode;
+    updateModeButtons();
     leaderboardScreen.classList.remove('hidden');
     refreshLeaderboard();
 }
@@ -1478,20 +1729,24 @@ function closeLeaderboardScreen() {
 
 function recordFloorProgress(floor) {
     if (!currentUser) return;
-    const bestFloor = Math.max(currentUser.bestFloor || 1, toFloorNumber(floor, 1));
-    if (bestFloor > currentUser.bestFloor) {
-        currentUser.bestFloor = bestFloor;
+    const mode = getActiveGameMode();
+    const bestFloor = Math.max(getUserBestFloor(currentUser, mode), toFloorNumber(floor, 1));
+    currentUser.bestFloors = normalizeBestFloors(currentUser);
+    if (bestFloor > getUserBestFloor(currentUser, mode)) {
+        currentUser.bestFloors[mode] = bestFloor;
+        currentUser.bestFloor = getUserBestFloor(currentUser, selectedMode);
         saveUserProfile(currentUser);
     } else {
         updateUserPanel();
     }
+    saveLocalUserProgress(currentUser);
 
-    updateLocalLeaderboard(currentUser, bestFloor);
+    updateLocalLeaderboard(currentUser, bestFloor, mode);
 
     if (currentUser.source !== 'cloud') return;
     apiRequest('/api/score', {
         method: 'POST',
-        body: JSON.stringify({ userId: currentUser.id, floor: bestFloor })
+        body: JSON.stringify({ userId: currentUser.id, floor: bestFloor, mode })
     }).catch(() => {});
 }
 
@@ -1503,6 +1758,7 @@ function showMainMenu() {
     gameOverScreen.classList.add('hidden');
     rewardScreen.classList.add('hidden');
     upgradeScreen.classList.add('hidden');
+    shopScreen.classList.add('hidden');
     bossChoiceScreen.classList.add('hidden');
     removeCardScreen.classList.add('hidden');
     pileViewScreen.classList.add('hidden');
@@ -1528,7 +1784,7 @@ function showMainMenu() {
 newGameBtn.onclick = () => {
     mainMenu.classList.add('hidden');
     deleteSave();
-    newGame();
+    newGame(selectedMode);
 };
 
 loadGameBtn.onclick = () => {
@@ -1561,9 +1817,27 @@ changePasswordForm.addEventListener('submit', handleChangePasswordSubmit);
 leaderboardBtn.onclick = () => showLeaderboardScreen();
 refreshLeaderboardBtn.onclick = () => refreshLeaderboard();
 closeLeaderboardBtn.onclick = () => closeLeaderboardScreen();
+modeChoiceButtons.forEach(button => {
+    button.onclick = () => setSelectedMode(button.dataset.modeChoice);
+});
+leaderboardModeButtons.forEach(button => {
+    button.onclick = () => {
+        leaderboardMode = normalizeGameMode(button.dataset.leaderboardMode);
+        updateModeButtons();
+        refreshLeaderboard();
+    };
+});
 if (soundToggleBtn) soundToggleBtn.onclick = () => toggleSound();
 deckPile.onclick = () => showPileView();
 closePileViewBtn.onclick = () => pileViewScreen.classList.add('hidden');
+if (leaveShopBtn) {
+    leaveShopBtn.onclick = () => {
+        shopScreen.classList.add('hidden');
+        const done = currentShopDone || startFloor;
+        currentShopDone = null;
+        done();
+    };
+}
 bossAddCardBtn.onclick = () => {
     bossChoiceScreen.classList.add('hidden');
     showRewardScreen(afterBossDeckChoice);
@@ -1846,6 +2120,7 @@ function updateUI() {
     // Energy & piles
     currentEnergyEl.textContent = p.energy;
     maxEnergyEl.textContent = p.maxEnergy;
+    if (goldCountEl) goldCountEl.textContent = Math.max(0, Number(G.gold || 0));
     deckCountEl.textContent = p.deck.length;
     discardCountEl.textContent = p.discard.length;
 
@@ -1869,4 +2144,5 @@ function updateUI() {
 // START — Show main menu instead of auto-starting
 // ============================================================
 updateSoundButton();
+updateModeButtons();
 showMainMenu();

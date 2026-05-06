@@ -27,6 +27,16 @@
                         <button id="change-password-open-btn" class="btn-ghost hidden">改密码</button>
                     </div>
                 </div>
+                <div id="mode-selector" class="mode-selector" aria-label="游戏难度">
+                    <button type="button" class="mode-choice active" data-mode-choice="easy">
+                        <strong>简单模式</strong>
+                        <small>轻松成长</small>
+                    </button>
+                    <button type="button" class="mode-choice" data-mode-choice="hard">
+                        <strong>困难模式</strong>
+                        <small>标准挑战</small>
+                    </button>
+                </div>
                 <div class="menu-buttons">
                     <button id="new-game-btn" class="btn-gold big-btn menu-btn">⚔️ 开始新游戏</button>
                     <button id="load-game-btn" class="btn-gold big-btn menu-btn" disabled>📂 继续存档</button>
@@ -101,6 +111,10 @@
         <div id="leaderboard-screen" class="overlay hidden">
             <div class="overlay-content leaderboard-content">
                 <h2>🏆 关卡排行榜</h2>
+                <div class="leaderboard-mode-tabs">
+                    <button type="button" class="leaderboard-mode-tab active" data-leaderboard-mode="easy">简单榜</button>
+                    <button type="button" class="leaderboard-mode-tab" data-leaderboard-mode="hard">困难榜</button>
+                </div>
                 <div id="leaderboard-list" class="leaderboard-list"></div>
                 <p id="leaderboard-message" class="form-message"></p>
                 <div class="dialog-actions">
@@ -146,6 +160,10 @@
                 <span id="current-energy">3</span>/<span id="max-energy">3</span>
             </div>
 
+            <div id="gold-counter" class="gold-counter">
+                🪙 <span id="gold-count">0</span>
+            </div>
+
             <div id="deck-pile" class="pile" title="抽牌堆">
                 📚 <span id="deck-count">9</span>
             </div>
@@ -180,6 +198,15 @@
                 <p class="reward-subtitle">击败 Boss！选择一张卡牌进行强化：</p>
                 <div id="upgrade-cards" class="card-selection-container"></div>
                 <button id="skip-upgrade-btn" class="btn-gold">跳过升级</button>
+            </div>
+        </div>
+
+        <div id="shop-screen" class="overlay hidden">
+            <div class="overlay-content shop-content">
+                <h2>商店</h2>
+                <p id="shop-gold" class="reward-subtitle">金币：0</p>
+                <div id="shop-cards" class="shop-card-grid"></div>
+                <button id="leave-shop-btn" class="btn-gold">离开商店</button>
             </div>
         </div>
 

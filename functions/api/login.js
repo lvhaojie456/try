@@ -52,7 +52,7 @@ export async function onRequestPost({ request, env }) {
     if (!username || !password) return json({ error: '请输入账号和密码。' }, 400);
 
     const user = await env.DB.prepare(
-        `SELECT id, username, best_floor, password_salt, password_hash, updated_at
+        `SELECT id, username, best_floor, best_floor_easy, best_floor_hard, password_salt, password_hash, updated_at
          FROM users
          WHERE username = ?`
     ).bind(username).first();
@@ -71,7 +71,9 @@ export async function onRequestPost({ request, env }) {
         user: {
             id: user.id,
             username: user.username,
-            bestFloor: user.best_floor
+            bestFloor: user.best_floor,
+            bestFloorEasy: user.best_floor_easy,
+            bestFloorHard: user.best_floor_hard
         }
     });
 }

@@ -41,6 +41,11 @@ npx wrangler d1 execute arcane-quest-db --remote --file=./schema.sql
 npx wrangler d1 execute arcane-quest-db --remote --file=./migrations/0001_add_passwords.sql
 ```
 
+如果你已经上线过旧版排行榜，再运行一次难度分榜迁移。它会把旧排行榜成绩放到困难榜里，简单榜从第 1 层开始：
+```bash
+npx wrangler d1 execute arcane-quest-db --remote --file=./migrations/0002_add_difficulty_leaderboards.sql
+```
+
 ## 5. 本地用 Cloudflare Pages Functions 测试
 
 先初始化本地 D1：
@@ -53,6 +58,12 @@ npx wrangler d1 execute arcane-quest-db --local --file=./schema.sql
 
 ```bash
 npx wrangler d1 execute arcane-quest-db --local --file=./migrations/0001_add_passwords.sql
+```
+
+本地也可以同步难度分榜迁移：
+
+```bash
+npx wrangler d1 execute arcane-quest-db --local --file=./migrations/0002_add_difficulty_leaderboards.sql
 ```
 
 再启动 Pages 本地环境：
