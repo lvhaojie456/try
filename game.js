@@ -104,12 +104,12 @@ const CARDS = {
     dodge:         { id:'dodge',         name:'翻滚躲避',     cost:1, type:'skill',  block:5, draw:1, desc:'获得 5 点格挡。抽 1 张牌。' },
     battlecry:     { id:'battlecry',     name:'战斗呐喊',     cost:1, type:'power',  strGain:3, desc:'力量 +3。（能力卡）' },
     flamaura:      { id:'flamaura',      name:'火焰光环',     cost:2, type:'power',  aura:4, desc:'每回合造成 4 点伤害。（能力卡）' },
-    arcane_missile:{ id:'arcane_missile',name:'奥术飞弹',     cost:1, type:'attack', dmg:5,  hits:3, unlockPrice:90, desc:'造成 5 点伤害 3 次。' },
-    frost_seal:    { id:'frost_seal',    name:'霜纹封印',     cost:1, type:'skill',  block:10, applyWeak:2, unlockPrice:85, desc:'获得 10 点格挡。施加 2 层虚弱。' },
-    phoenix_feather:{id:'phoenix_feather',name:'凤凰羽',       cost:1, type:'skill',  healAmt:12, draw:2, unlockPrice:100, desc:'回复 12 点生命。抽 2 张牌。' },
-    golden_slash:  { id:'golden_slash',  name:'鎏金斩',       cost:0, type:'attack', dmg:8,  unlockPrice:110, desc:'造成 8 点伤害。' },
-    dragon_spark:  { id:'dragon_spark',  name:'龙息火花',     cost:2, type:'attack', dmg:16, poison:5, unlockPrice:130, desc:'造成 16 点伤害。施加 5 层中毒。' },
-    guardian_oath: { id:'guardian_oath', name:'守护誓约',     cost:2, type:'power',  strGain:2, aura:4, unlockPrice:140, desc:'力量 +2。每回合造成 4 点伤害。' },
+    arcane_missile:{ id:'arcane_missile',name:'奥术飞弹',     cost:1, type:'attack', dmg:5,  hits:3, unlockPrice:900, desc:'造成 5 点伤害 3 次。' },
+    frost_seal:    { id:'frost_seal',    name:'霜纹封印',     cost:1, type:'skill',  block:10, applyWeak:2, unlockPrice:850, desc:'获得 10 点格挡。施加 2 层虚弱。' },
+    phoenix_feather:{id:'phoenix_feather',name:'凤凰羽',       cost:1, type:'skill',  healAmt:12, draw:2, unlockPrice:1000, desc:'回复 12 点生命。抽 2 张牌。' },
+    golden_slash:  { id:'golden_slash',  name:'鎏金斩',       cost:0, type:'attack', dmg:8,  unlockPrice:1100, desc:'造成 8 点伤害。' },
+    dragon_spark:  { id:'dragon_spark',  name:'龙息火花',     cost:2, type:'attack', dmg:16, poison:5, unlockPrice:1300, desc:'造成 16 点伤害。施加 5 层中毒。' },
+    guardian_oath: { id:'guardian_oath', name:'守护誓约',     cost:2, type:'power',  strGain:2, aura:4, unlockPrice:1400, desc:'力量 +2。每回合造成 4 点伤害。' },
     wound:         { id:'wound',         name:'受伤',         cost:99,type:'curse',  desc:'无法打出。占用手牌。' },
 };
 
